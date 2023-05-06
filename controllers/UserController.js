@@ -96,3 +96,27 @@ export const getMe = async (req, res) => {
     });
   }
 };
+
+export const getUser = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = await UserModel.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        message: 'Пользователь не найден',
+      });
+    }
+
+    const { passwordHash, email, ...userData } = user._doc;
+
+    const data = { ...userData };
+
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      message: 'Нет доступа',
+    });
+  }
+};

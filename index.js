@@ -20,6 +20,8 @@ app.post('/auth/login', UserController.login);
 app.post('/auth/register', UserController.register);
 app.get('/auth/me', checkAuth, UserController.getMe);
 
+app.get('/user/:id', checkAuth, UserController.getUser);
+
 const port = process.env.PORT || 4444;
 app.listen(port, (err) => {
   if (err) {
