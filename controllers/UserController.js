@@ -116,7 +116,45 @@ export const getUser = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({
-      message: 'Нет доступа',
+      message: 'Пользователь не найден',
     });
   }
+};
+
+export const updateUserInfo = async (req, res) => {
+    try {
+      const userId = req.params.id;
+      // let isOldAvatarRemoved;
+
+      const user = await UserModel.findById(userId);
+
+      // if (user._doc.avatarUrl) {
+      //   isOldAvatarRemoved = await removeImage(user._doc.avatarUrl, res);
+      // }
+      //
+      // if (isOldAvatarRemoved === true || isOldAvatarRemoved === undefined) {
+        await UserModel.updateOne({
+              _id: userId,
+            },
+            {
+              lastName: req.body.lastName,
+              firstName: req.body.firstName,
+              city: req.body.city,
+              uniOrJob: req.body.uniOrJob,
+              avatarUrl: req.body.avatarUrl,
+            },
+        );
+
+        res.json({
+          success: true,
+        });
+      // } else {
+      //   return isOldAvatarRemoved;
+      // }
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({
+        message: 'Ошибка при редактировании профиля.\nПерезагрузите страницу и попробуйте снова.',
+      });
+    }
 };
