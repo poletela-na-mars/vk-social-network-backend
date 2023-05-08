@@ -121,6 +121,28 @@ export const getUser = async (req, res) => {
   }
 };
 
+export const getUsers = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = await UserModel.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        message: 'Пользователь не найден',
+      });
+    }
+
+    const users = await UserModel.find().exec();
+
+    res.json(users);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      message: 'Не удалось найти пользователей',
+    });
+  }
+};
+
 export const updateUserInfo = async (req, res) => {
     try {
       const userId = req.params.id;

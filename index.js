@@ -20,8 +20,10 @@ app.post('/auth/login', UserController.login);
 app.post('/auth/register', UserController.register);
 app.get('/auth/me', checkAuth, UserController.getMe);
 
+app.get('/:id/users', checkAuth, UserController.getUsers);
+//app.get('/:id/friends', checkAuth, UserController.getFriends);
 app.get('/user/:id', checkAuth, UserController.getUser);
-app.patch('/user/:id', UserController.updateUserInfo);
+app.patch('/user/:id', checkAuth, UserController.updateUserInfo);
 
 const port = process.env.PORT || 4444;
 app.listen(port, (err) => {
