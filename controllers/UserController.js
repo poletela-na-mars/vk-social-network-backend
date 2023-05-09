@@ -2,6 +2,18 @@ import bcrypt from 'bcrypt';
 import UserModel from '../models/User.js';
 import jwt from 'jsonwebtoken';
 
+function NotFoundError(message = '') {
+  this.name = 'NotFoundError';
+  this.message = message;
+}
+
+NotFoundError.prototype = Error.prototype;
+
+const sanitizeData = (user) => {
+  const { passwordHash, email, ...userData } = user._doc;
+  return { ...userData };
+};
+
 const sendTokenAndUserDataResp = (user, res) => {
   const token = jwt.sign({
         _id: user._id,
@@ -84,9 +96,7 @@ export const getMe = async (req, res) => {
       });
     }
 
-    const { passwordHash, email, ...userData } = user._doc;
-
-    const data = { ...userData };
+    const data = sanitizeData(user);
 
     res.json(data);
   } catch (err) {
@@ -108,9 +118,7 @@ export const getUser = async (req, res) => {
       });
     }
 
-    const { passwordHash, email, ...userData } = user._doc;
-
-    const data = { ...userData };
+    const data = sanitizeData(user);
 
     res.json(data);
   } catch (err) {
@@ -132,9 +140,42 @@ export const getUsers = async (req, res) => {
       });
     }
 
-    const users = await UserModel.find().exec();
+    let users;
 
-    res.json(users);
+    const qAct = req.query.act;
+    const qSection = req.query.section;
+
+    // all people
+    switch (qAct) {
+      case 'find':
+        users = await UserModel.find({ _id: { $ne: userId }}).exec();
+        break;
+      default:
+        break;
+    }
+
+    // friend requests
+    switch (qSection) {
+      case 'all_requests':
+        users = await UserModel.find({ _id: { $in: user._doc.inFriendsReq } }).exec();
+        break;
+      case 'out_requests':
+        users = await UserModel.find({ _id: { $in: user._doc.outFriendsReq } }).exec();
+        break;
+      default:
+        break;
+    }
+
+    // friends
+    if (qAct === undefined && qSection === undefined) {
+      users = await UserModel.find({ _id: { $in: user._doc.friends } }).exec();
+    }
+
+    if (users) {
+      res.json(users);
+    } else {
+      throw new NotFoundError('Пользователи не найдены, возможно неверные query');
+    }
   } catch (err) {
     console.error(err);
     res.status(500).json({
@@ -144,39 +185,165 @@ export const getUsers = async (req, res) => {
 };
 
 export const updateUserInfo = async (req, res) => {
-    try {
-      const userId = req.params.id;
-      // let isOldAvatarRemoved;
+  try {
+    const userId = req.params.id;
+    // let isOldAvatarRemoved;
 
-      const user = await UserModel.findById(userId);
+    const user = await UserModel.findById(userId);
 
-      // if (user._doc.avatarUrl) {
-      //   isOldAvatarRemoved = await removeImage(user._doc.avatarUrl, res);
-      // }
-      //
-      // if (isOldAvatarRemoved === true || isOldAvatarRemoved === undefined) {
-        await UserModel.updateOne({
-              _id: userId,
-            },
-            {
-              lastName: req.body.lastName,
-              firstName: req.body.firstName,
-              city: req.body.city,
-              uniOrJob: req.body.uniOrJob,
-              avatarUrl: req.body.avatarUrl,
-            },
-        );
+    // if (user._doc.avatarUrl) {
+    //   isOldAvatarRemoved = await removeImage(user._doc.avatarUrl, res);
+    // }
+    //
+    // if (isOldAvatarRemoved === true || isOldAvatarRemoved === undefined) {
+    await UserModel.updateOne({
+          _id: userId,
+        },
+        {
+          lastName: req.body.lastName,
+          firstName: req.body.firstName,
+          city: req.body.city,
+          uniOrJob: req.body.uniOrJob,
+          avatarUrl: req.body.avatarUrl,
+        },
+    );
 
-        res.json({
-          success: true,
-        });
-      // } else {
-      //   return isOldAvatarRemoved;
-      // }
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({
-        message: 'Ошибка при редактировании профиля.\nПерезагрузите страницу и попробуйте снова.',
-      });
+    res.json({
+      success: true,
+    });
+    // } else {
+    //   return isOldAvatarRemoved;
+    // }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      message: 'Ошибка при редактировании профиля.\nПерезагрузите страницу и попробуйте снова.',
+    });
+  }
+};
+
+export const addFriend = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const friendId = req.params.friendId;
+
+    if (!userId || !friendId) {
+      throw new NotFoundError('Пользователи не найдены, возможно неверные params');
     }
+
+    const userData = await UserModel.findOneAndUpdate({
+          _id: userId,
+        },
+        {
+          $push: {
+            outFriendsReq: friendId,
+          },
+        },
+        {
+          returnDocument: 'after',
+        },
+    );
+
+    const friendData = await UserModel.findOneAndUpdate({
+          _id: friendId,
+        },
+        {
+          $push: {
+            inFriendsReq: userId,
+          },
+        },
+        {
+          returnDocument: 'after',
+        },
+    );
+
+    const isBecomingFriendForMe = userData?.inFriendsReq?.find(req => req === friendId) &&
+        userData?.outFriendsReq?.find(req => req === friendId);
+    const isMeBecomingFriendForFriend = friendData?.inFriendsReq?.find(req => req === userId) &&
+        friendData?.outFriendsReq?.find(req => req === userId);
+
+    if (isMeBecomingFriendForFriend && isBecomingFriendForMe) {
+      await UserModel.updateOne({
+            _id: userId,
+          },
+          {
+            $pull: {
+              inFriendsReq: friendId,
+              outFriendsReq: friendId,
+            },
+            $push: {
+              friends: friendId,
+            },
+          }
+      );
+      await UserModel.updateOne({
+            _id: friendId,
+          },
+          {
+            $pull: {
+              inFriendsReq: userId,
+              outFriendsReq: userId,
+            },
+            $push: {
+              friends: userId,
+            },
+          }
+      );
+    }
+
+    return res.json({
+      success: true,
+    });
+
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      message: 'Ошибка при добавлении в друзья.\nПерезагрузите страницу и попробуйте снова.',
+    });
+  }
+};
+
+export const deleteFriend = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const friendId = req.params.friendId;
+
+    if (!userId || !friendId) {
+      throw new NotFoundError('Пользователи не найдены, возможно неверные params');
+    }
+
+    await UserModel.updateOne({
+          _id: userId,
+        },
+        {
+          $pull: {
+            inFriendsReq: friendId,
+            outFriendsReq: friendId,
+            friends: friendId,
+          },
+        }
+    );
+
+    await UserModel.updateOne({
+          _id: friendId,
+        },
+        {
+          $pull: {
+            inFriendsReq: userId,
+            outFriendsReq: userId,
+            friends: userId,
+          },
+        }
+    );
+
+    return res.json({
+      success: true,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      message: 'Ошибка при удалении из друзей.\nПерезагрузите страницу и попробуйте снова.',
+    });
+  }
 };

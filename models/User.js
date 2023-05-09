@@ -38,6 +38,14 @@ const UserSchema = new mongoose.Schema({
         type: String,
         default: '',
       },
+      inFriendsReq: {
+        type: Array,
+        default: [],
+      },
+      outFriendsReq: {
+        type: Array,
+        default: [],
+      },
     },
     {
       timestamps: true,
