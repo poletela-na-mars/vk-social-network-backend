@@ -1,6 +1,9 @@
 import bcrypt from 'bcrypt';
 import UserModel from '../models/User.js';
 import jwt from 'jsonwebtoken';
+import * as path from 'path';
+import * as fs from 'fs';
+import { sanitizeData } from '../utils/sanitizeData.js';
 
 function NotFoundError(message = '') {
   this.name = 'NotFoundError';
@@ -8,11 +11,6 @@ function NotFoundError(message = '') {
 }
 
 NotFoundError.prototype = Error.prototype;
-
-const sanitizeData = (user) => {
-  const { passwordHash, email, ...userData } = user._doc;
-  return { ...userData };
-};
 
 const sendTokenAndUserDataResp = (user, res) => {
   const token = jwt.sign({
@@ -30,6 +28,29 @@ const sendTokenAndUserDataResp = (user, res) => {
     userData,
     token,
   });
+};
+
+const removeImage = (oldImageUrl, res) => {
+  const imageUrl = oldImageUrl;
+
+  if (imageUrl) {
+    const re = /uploads\/.*/;
+    const relPath = imageUrl.match(re);
+    const oldPath = path.join(relPath[0]);
+    fs.unlink(oldPath, (err) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({
+          message: 'Не удалось удалить изображение',
+        });
+      }
+    });
+    return res.status(200);
+  }
+};
+
+export const removeAvatar = async (req, res) => {
+  return removeImage(req.body.avatarUrl, res);
 };
 
 export const register = async (req, res) => {
@@ -148,7 +169,7 @@ export const getUsers = async (req, res) => {
     // all people
     switch (qAct) {
       case 'find':
-        users = await UserModel.find({ _id: { $ne: userId }}).exec();
+        users = await UserModel.find({ _id: { $ne: userId }}).sort({firstName: 1}).exec();
         break;
       default:
         break;
@@ -168,7 +189,7 @@ export const getUsers = async (req, res) => {
 
     // friends
     if (qAct === undefined && qSection === undefined) {
-      users = await UserModel.find({ _id: { $in: user._doc.friends } }).exec();
+      users = await UserModel.find({ _id: { $in: user._doc.friends } }).sort({firstName: 1}).exec();
     }
 
     if (users) {
@@ -187,15 +208,7 @@ export const getUsers = async (req, res) => {
 export const updateUserInfo = async (req, res) => {
   try {
     const userId = req.params.id;
-    // let isOldAvatarRemoved;
 
-    const user = await UserModel.findById(userId);
-
-    // if (user._doc.avatarUrl) {
-    //   isOldAvatarRemoved = await removeImage(user._doc.avatarUrl, res);
-    // }
-    //
-    // if (isOldAvatarRemoved === true || isOldAvatarRemoved === undefined) {
     await UserModel.updateOne({
           _id: userId,
         },
@@ -211,9 +224,6 @@ export const updateUserInfo = async (req, res) => {
     res.json({
       success: true,
     });
-    // } else {
-    //   return isOldAvatarRemoved;
-    // }
   } catch (err) {
     console.error(err);
     res.status(500).json({
