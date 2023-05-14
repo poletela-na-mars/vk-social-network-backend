@@ -6,6 +6,7 @@ import { UserController, PostController } from './controllers/index.js';
 import { checkAuth } from './utils/checkAuth.js';
 import { fileFilter } from './validations.js';
 import * as fs from 'fs';
+import * as https from 'https';
 
 mongoose.set('strictQuery', true);
 mongoose.connect(process.env.MONGODB_URI)
@@ -16,6 +17,21 @@ const app = express();
 
 app.use(express.json());
 app.use(cors());
+
+const port = process.env.PORT || 4444;
+https
+    .createServer(
+        // Provide the private and public key to the server by reading each
+        // file's content with the readFileSync() method.
+        {
+          key: fs.readFileSync("key.pem"),
+          cert: fs.readFileSync("cert.pem"),
+        },
+        app
+    )
+    .listen(port, () => {
+      console.log(`server is running at port ${port}`);
+    });
 
 const storage = multer.diskStorage({
   destination: (_, __, cb) => {
@@ -68,12 +84,12 @@ app.get('/posts', checkAuth, PostController.getPosts);
 app.get('/posts/:id', checkAuth, PostController.getPost);
 app.patch('/posts/:id', checkAuth, PostController.likePost);
 
-const port = process.env.PORT || 4444;
-app.listen(port, (err) => {
-  if (err) {
-    return console.error(err);
-  }
-
-  console.log('Server OK');
-  console.log(`Server is running on ${port}`);
-});
+// const port = process.env.PORT || 4444;
+// app.listen(port, (err) => {
+//   if (err) {
+//     return console.error(err);
+//   }
+//
+//   console.log('Server OK');
+//   console.log(`Server is running on ${port}`);
+// });
