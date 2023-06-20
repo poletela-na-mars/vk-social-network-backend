@@ -2,7 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import multer from 'multer';
 import cors from 'cors';
-import { UserController, PostController } from './controllers/index.js';
+import { PostController, UserController } from './controllers/index.js';
 import { checkAuth } from './utils/checkAuth.js';
 import { fileFilter } from './validations.js';
 import * as fs from 'fs';
@@ -16,6 +16,20 @@ const app = express();
 
 app.use(express.json());
 app.use(cors());
+
+// https
+//     .createServer(
+//         // Provide the private and public key to the server by reading each
+//         // file's content with the readFileSync() method.
+//         {
+//           key: fs.readFileSync("key.pem"),
+//           cert: fs.readFileSync("cert.pem"),
+//         },
+//         app
+//     )
+//     .listen(port, () => {
+//       console.log(`server is running at port ${port}`);
+//     });
 
 const storage = multer.diskStorage({
   destination: (_, __, cb) => {

@@ -8,4 +8,4 @@ RUN npm install
 COPY . .
 EXPOSE 4444
 
-CMD ["node", "index.js"]
+ENTRYPOINT ["node", "index.js"]
