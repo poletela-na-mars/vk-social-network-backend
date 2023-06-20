@@ -5,9 +5,9 @@ const PostSchema = new mongoose.Schema({
         type: String,
         required: true,
       },
-      likesCount: {
-        type: Number,
-        default: 0,
+      likes: {
+        type: Array,
+        default: [],
       },
       user: {
         type: Object,

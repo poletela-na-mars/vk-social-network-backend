@@ -56,7 +56,7 @@ export const getPost = async (req, res) => {
   try {
     const postId = req.params.id;
 
-    const post = await PostModel.findOne({ _id: postId});
+    const post = await PostModel.findOne({ _id: postId });
 
     if (!post) {
       return res.status(400).json({
@@ -73,20 +73,32 @@ export const getPost = async (req, res) => {
   }
 };
 
-// TODO - [WORK] - set/unset like + prohibit putting many likes
 export const likePost = async (req, res) => {
   try {
     const postId = req.params.id;
+    const userId = req.userId;
 
-    await PostModel.updateOne({
+    const wasLikedById = await PostModel.find({ _id: postId, likes: { $in: [userId] } }).count() > 0;
+
+    const likedPost = wasLikedById
+        ? await PostModel.findOneAndUpdate({
           _id: postId,
-        },
-        { $inc: { likesCount: 1 }}
-    );
+          likes: {
+            $in: [userId]
+          }
+        }, {
+          $pull: { likes: userId }
+        }, { multi: true, returnDocument: 'after' })
+        : await PostModel.findOneAndUpdate({
+          _id: postId,
+          likes: {
+            $nin: [userId]
+          }
+        }, {
+          $push: { likes: userId }
+        }, { multi: true, returnDocument: 'after' });
 
-    return res.json({
-      success: true,
-    });
+    return res.json(likedPost);
   } catch (err) {
     console.error(err);
     return res.status(500).json({

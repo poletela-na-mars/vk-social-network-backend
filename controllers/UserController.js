@@ -209,7 +209,7 @@ export const updateUserInfo = async (req, res) => {
   try {
     const userId = req.params.id;
 
-    await UserModel.updateOne({
+    const updatedUserData = await UserModel.findOneAndUpdate({
           _id: userId,
         },
         {
@@ -219,11 +219,12 @@ export const updateUserInfo = async (req, res) => {
           uniOrJob: req.body.uniOrJob,
           avatarUrl: req.body.avatarUrl,
         },
+        {
+          returnDocument: 'after'
+        }
     );
 
-    res.json({
-      success: true,
-    });
+    res.json(updatedUserData);
   } catch (err) {
     console.error(err);
     res.status(500).json({
