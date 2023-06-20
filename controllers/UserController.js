@@ -252,10 +252,10 @@ export const addFriend = async (req, res) => {
         },
         {
           returnDocument: 'after',
-        },
+        }
     );
 
-    const friendData = await UserModel.findOneAndUpdate({
+    let friendData = await UserModel.findOneAndUpdate({
           _id: friendId,
         },
         {
@@ -265,7 +265,7 @@ export const addFriend = async (req, res) => {
         },
         {
           returnDocument: 'after',
-        },
+        }
     );
 
     const isBecomingFriendForMe = userData?.inFriendsReq?.find(req => req === friendId) &&
@@ -274,7 +274,7 @@ export const addFriend = async (req, res) => {
         friendData?.outFriendsReq?.find(req => req === userId);
 
     if (isMeBecomingFriendForFriend && isBecomingFriendForMe) {
-      await UserModel.updateOne({
+      await UserModel.findOneAndUpdate({
             _id: userId,
           },
           {
@@ -285,9 +285,12 @@ export const addFriend = async (req, res) => {
             $push: {
               friends: friendId,
             },
+          },
+          {
+            returnDocument: 'after',
           }
       );
-      await UserModel.updateOne({
+      friendData = await UserModel.findOneAndUpdate({
             _id: friendId,
           },
           {
@@ -298,15 +301,14 @@ export const addFriend = async (req, res) => {
             $push: {
               friends: userId,
             },
+          },
+          {
+            returnDocument: 'after',
           }
       );
     }
 
-    return res.json({
-      success: true,
-    });
-
-
+    res.json(friendData);
   } catch (err) {
     console.error(err);
     return res.status(500).json({
@@ -324,7 +326,7 @@ export const deleteFriend = async (req, res) => {
       throw new NotFoundError('Пользователи не найдены, возможно неверные params');
     }
 
-    await UserModel.updateOne({
+    await UserModel.findOneAndUpdate({
           _id: userId,
         },
         {
@@ -333,10 +335,13 @@ export const deleteFriend = async (req, res) => {
             outFriendsReq: friendId,
             friends: friendId,
           },
+        },
+        {
+          returnDocument: 'after',
         }
     );
 
-    await UserModel.updateOne({
+    const friendData = await UserModel.findOneAndUpdate({
           _id: friendId,
         },
         {
@@ -345,12 +350,13 @@ export const deleteFriend = async (req, res) => {
             outFriendsReq: userId,
             friends: userId,
           },
+        },
+        {
+          returnDocument: 'after',
         }
     );
 
-    return res.json({
-      success: true,
-    });
+    res.json(friendData);
   } catch (err) {
     console.error(err);
     return res.status(500).json({
