@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { ObjectId } from 'mongodb';
 
 const PostSchema = new mongoose.Schema({
       text: {
@@ -10,8 +11,7 @@ const PostSchema = new mongoose.Schema({
         default: [],
       },
       user: {
-        type: Object,
-        ref: 'User',
+        type: ObjectId,
         required: true,
       },
       imageUrl: {

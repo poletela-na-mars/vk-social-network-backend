@@ -23,7 +23,7 @@ export const createPost = async (req, res) => {
 
 export const getPosts = async (req, res) => {
   try {
-    const userId = req.userId;
+    const userId = req.query.id;
     const user = await UserModel.findById(userId);
     const clearUser = sanitizeData(user);
     const friends = clearUser.friends;
