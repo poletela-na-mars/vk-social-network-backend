@@ -23,7 +23,7 @@ const UserSchema = new mongoose.Schema({
         required: true,
       },
       friends: {
-        type: Array,
+        type: [mongoose.Schema.Types.ObjectId],
         default: [],
       },
       avatarUrl: {

@@ -1,6 +1,5 @@
 import PostModel from '../models/Post.js';
 import UserModel from '../models/User.js';
-import { sanitizeData } from '../utils/sanitizeData.js';
 
 export const createPost = async (req, res) => {
   try {
@@ -25,8 +24,9 @@ export const getPosts = async (req, res) => {
   try {
     const userId = req.query.id;
     const user = await UserModel.findById(userId);
-    const clearUser = sanitizeData(user);
-    const friends = clearUser.friends;
+
+    // const friends = clearUser.friends;
+    // const castedFr = user.friends.map((friend) => new mongoose.Types.ObjectId(friend));
 
     let mode;
     const qMode = req.query.mode;
@@ -36,7 +36,7 @@ export const getPosts = async (req, res) => {
         mode = { user: userId };
         break;
       case 'friends':
-        mode = { user: { _id: { $in: friends } } };
+        mode = { user: { $in: [user._id, user.friends] } };
         break;
     }
 
