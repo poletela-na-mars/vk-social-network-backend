@@ -152,7 +152,7 @@ export const getUser = async (req, res) => {
 
 export const getUsers = async (req, res) => {
   try {
-    const userId = req.params.id;
+    const userId = req.query.id;
     const user = await UserModel.findById(userId);
 
     if (!user) {

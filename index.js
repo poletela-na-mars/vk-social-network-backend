@@ -70,12 +70,12 @@ app.post('/auth/login', UserController.login);
 app.post('/auth/register', UserController.register);
 app.get('/auth/me', checkAuth, UserController.getMe);
 
-app.get('/:id/users', checkAuth, UserController.getUsers);
-app.get('/user/:id', checkAuth, UserController.getUser);
-app.patch('/user/:id', checkAuth, UserController.updateUserInfo);
+app.get('/users', checkAuth, UserController.getUsers);
+app.get('/users/:id', checkAuth, UserController.getUser);
+app.patch('/users/:id', checkAuth, UserController.updateUserInfo);
 
-app.put('/user/:id/friend/:friendId', checkAuth, UserController.addFriend);
-app.delete('/user/:id/friend/:friendId', checkAuth, UserController.deleteFriend);
+app.put('/users/:id/friend/:friendId', checkAuth, UserController.addFriend);
+app.delete('/users/:id/friend/:friendId', checkAuth, UserController.deleteFriend);
 
 app.post('/posts', checkAuth, PostController.createPost);
 app.get('/posts', checkAuth, PostController.getPosts);
